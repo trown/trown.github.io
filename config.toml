@@ -11,5 +11,15 @@ highlight_code = true
 # Whether to build a search index to be used later on by a JavaScript library
 build_search_index = false
 
+theme = "sam"
+
 [extra]
-# Put all your custom variables here
+sam_menu = [
+    { text = "posts", link = "/posts" },
+    { text = "about", link = "/about" },
+    { test = "github", link = "https://github.com/trown" }
+]
+sam_bottom_menu = true
+
+[extra.sam_footer]
+text = "Some good quote here."
