@@ -22,4 +22,4 @@ sam_menu = [
 sam_bottom_menu = true
 
 [extra.sam_footer]
-text = "Some good quote here."
+text = "“Ardently do today what must be done. Who knows? Tomorrow, death comes.” <br>- Siddhattha Gotama"
