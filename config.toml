@@ -1,5 +1,6 @@
 # The URL the site will be built for
 base_url = "https://blog.impermanent.tech"
+title = "Impermanent Tech"
 
 # Whether to automatically compile all Sass files in the sass directory
 compile_sass = true
@@ -11,15 +12,25 @@ highlight_code = true
 # Whether to build a search index to be used later on by a JavaScript library
 build_search_index = false
 
+check_external_links = true
+
+taxonomies = [
+    {name = "tags", rss = true}
+]
+
 theme = "sam"
+
+generate_rss = true
 
 [extra]
 sam_menu = [
-    { text = "posts", link = "/posts" },
+    { text = "encoding", link = "/tags/encoding" },
+    { text = "understandings", link = "/tags/understandings" },
     { text = "about", link = "/about" },
-    { text = "github", link = "https://github.com/trown" }
+    { text = "impermanence", link = "/tags/impermanence" }
 ]
 sam_bottom_menu = true
+home = "..."
 
 [extra.sam_footer]
 text = "“Ardently do today what must be done. Who knows? Tomorrow, death comes.” <br>- Siddhattha Gotama"
