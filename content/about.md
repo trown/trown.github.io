@@ -31,4 +31,4 @@ The theme is [zola-sam][zola-sam] a zola port of the [Sam theme][og-sam] for [Hu
 [og-sam]: https://github.com/victoriadotdev/hugo-theme-sam
 [hugo]: https://gohugo.io
 [github]: https://github.com/trown
-[linkedin]: 
+[linkedin]: https://www.linkedin.com/in/john-trowbridge-06531a6a/
