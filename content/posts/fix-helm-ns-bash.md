@@ -1,6 +1,6 @@
 +++
-title = "How to Fix a Helm Namespace Without Needing to Re-deploy [PART 1]"
-date = 2019-10-06
+title = "How to Fix a Helm Namespace [PART 1]"
+date = 2019-10-14
 [taxonomies]
 tags = ["encoding", "understandings", "kubernetes", "helm", "protobuf", "bash"]
 +++
