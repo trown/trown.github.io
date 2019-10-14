@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="chrome=1">
+        <meta name="HandheldFriendly" content="True">
+        <meta name="MobileOptimized" content="320">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="referrer" content="no-referrer">
+
+        <link rel="stylesheet" href="https:&#x2F;&#x2F;blog.impermanent.tech&#x2F;fonts.css">
+        <link rel="stylesheet" href="https:&#x2F;&#x2F;blog.impermanent.tech&#x2F;style.css">
+
+        <title>
+    Hello World!
+</title>
+
+        
+            <link rel="alternate" type="application/rss+xml" title="RSS" href="https:&#x2F;&#x2F;blog.impermanent.tech&#x2F;rss.xml">
+        
+    </head>
+    <body>
+        
+    <div class="wrap">
+        <div class="section" id="title">
+            
+    Hello World!
+
+        </div>
+        <div class="section" id="content">
+            
+    
+        
+            
+    
+    Sun Oct  6, 2019
+
+        
+        
+            
+                &#183; 614 words
+            
+        
+        
+            
+            
+                &#183; 4 min
+            
+        
+        
+            <div class="tag-container">
+                
+                    <span class="tag">
+                        <a href="https:&#x2F;&#x2F;blog.impermanent.tech&#x2F;tags&#x2F;encoding&#x2F;">
+                            encoding
+                        </a>
+                    </span>
+                
+                    <span class="tag">
+                        <a href="https:&#x2F;&#x2F;blog.impermanent.tech&#x2F;tags&#x2F;impermanence&#x2F;">
+                            impermanence
+                        </a>
+                    </span>
+                
+                    <span class="tag">
+                        <a href="https:&#x2F;&#x2F;blog.impermanent.tech&#x2F;tags&#x2F;understandings&#x2F;">
+                            understandings
+                        </a>
+                    </span>
+                
+            </div>
+        
+        <hr/>
+    
+    <p>Unlike future posts, this post will not have much in the way of practical content. Instead, I will layout my intentions for this blog in general, as well as what my plans are for the first few posts. If those posts are already written by the time you see this, it is probably a better use of your time to skip this one. At some point, I will likely just fold information contained here into the about page and delete this post.</p>
+<h3 id="purpose">Purpose</h3>
+<p>I have spent most of my professional career being paid to work solely and directly on open source software[1]. However, recently I have changed jobs. While I really enjoy the technical challenges I am working on, I miss the feeling of giving back to the worldwide community of software developers. This blog is my method to scratch that particular itch.</p>
+<h3 id="topics">Topics</h3>
+<p>There are two topics that I find endlessly facinating, and that I feel I have <strong>practical</strong> understandings to share. These are software engineering and Buddhism. As far as the blog goes, I intend to only make posts about things in these categories which provide some immediate <strong>practical</strong> value[2].</p>
+<h3 id="the-spark">The Spark</h3>
+<p>I have been thinking of starting a blog for years, but the spark to actually do it comes from a recent interaction I had with the <a href="https://github.com/helm/helm">Helm</a> community on slack. I needed to update the namespace that <a href="https://helm.sh/docs/using_helm/#installing-tiller">tiller</a> thought a bunch of helm charts were deployed in[3]. After much googling without success, I asked on the <a href="https://kubernetes.slack.com/archives/C0NH30761/p1569422690003400">helm slack</a> channel. It turns out there is not any tooling to do this, but with some guidance from some very helpful folks in that channel, I was able to figure it out.</p>
+<h3 id="next-few-posts">Next Few Posts</h3>
+<p>The next few posts will be about the iterations of my solution to this problem. The first post will be about my first implementation simply written in Bash. However, there is much to learn even in this simple implementation about how tiller[4] maintains its state through configmaps with highly encoded data[5]. This Bash implementation worked, and I was able to use it against some dev clusters successfully. However, it felt very fragile and required cloning helm in order to run it[6].</p>
+<p>The next <strong>N</strong> posts will be about how we can improve on this working but imperfect solution[7]. This is a pattern I would like to try with future topics. My mantra is: &quot;Can I do better?&quot;. So, I will posit possible answers to that at the end of each post, and the following post will be about implementing those improvements.</p>
+<p>Beyond that, I am not sure exactly what I will write about. I have a few weeks to think about it ...</p>
+<h3 id="cadence">Cadence</h3>
+<p>I am a big proponent of habits[8]. As such, I plan to make a post every week. This may also change[9], but that is the plan for now.</p>
+<h3 id="footnotes">Footnotes</h3>
+<p>[1] Thanks Shadowman[1a]!</p>
+<p>[1a] Also, R.I.P. Shadowman.</p>
+<p>[2] For some definition of practical.</p>
+<p>[3] Not the actual k8s namespaces they were deployed in[3a]. Just the ones stored in tiller's configmaps.</p>
+<p>[3a] That is not possible because k8s namespaces are immutable on a deployed resource.</p>
+<p>[4] The value of this knowledge is fading with Helm 3 around the corner[4a], but there will likely still be Helm 2 deployments around for quite some time.</p>
+<p>[4a] R.I.P. tiller</p>
+<p>[5] base64 and gzip and protobuf... Oh my!</p>
+<p>[6] for the .proto files</p>
+<p>[7] <strong>SPOILER ALERT</strong> it involves rust.</p>
+<p>[8] I meditate every day.</p>
+<p>[9] Impermanence</p>
+
+
+        </div>
+        
+    <div class="section bottom-menu">
+        <hr/>
+        <p>
+            
+                
+                    <a href="&#x2F;tags&#x2F;encoding">
+                        encoding
+                    </a>
+                    &#183;
+                
+                    <a href="&#x2F;tags&#x2F;understandings">
+                        understandings
+                    </a>
+                    &#183;
+                
+                    <a href="&#x2F;about">
+                        about
+                    </a>
+                    &#183;
+                
+                    <a href="&#x2F;tags&#x2F;impermanence">
+                        impermanence
+                    </a>
+                    &#183;
+                
+            
+            <a href="https:&#x2F;&#x2F;blog.impermanent.tech">
+                ...
+            </a>
+        </p>
+    </div>
+
+        
+    
+        <div class="section footer">
+            “Ardently do today what must be done. Who knows? Tomorrow, death comes.” <br>- Siddhattha Gotama
+        </div>
+    
+
+    </div>
+
+    </body>
+</html>

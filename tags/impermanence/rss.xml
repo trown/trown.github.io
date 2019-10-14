@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>Impermanent Tech</title>
+        <link>https://blog.impermanent.tech</link>
+        <description></description>
+        <generator>Zola</generator>
+        <language>en</language>
+        <atom:link href="https://blog.impermanent.tech/tags/impermanence/rss.xml" rel="self" type="application/rss+xml"/>
+        <lastBuildDate>Sun, 06 Oct 2019 00:00:00 +0000</lastBuildDate>
+        
+            <item>
+                <title>Hello World!</title>
+                <pubDate>Sun, 06 Oct 2019 00:00:00 +0000</pubDate>
+                <link>https://blog.impermanent.tech/posts/hello-world/</link>
+                <guid>https://blog.impermanent.tech/posts/hello-world/</guid>
+                <description>&lt;p&gt;Unlike future posts, this post will not have much in the way of practical content. Instead, I will layout my intentions for this blog in general, as well as what my plans are for the first few posts. If those posts are already written by the time you see this, it is probably a better use of your time to skip this one. At some point, I will likely just fold information contained here into the about page and delete this post.&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;purpose&quot;&gt;Purpose&lt;&#x2F;h3&gt;
+&lt;p&gt;I have spent most of my professional career being paid to work solely and directly on open source software[1]. However, recently I have changed jobs. While I really enjoy the technical challenges I am working on, I miss the feeling of giving back to the worldwide community of software developers. This blog is my method to scratch that particular itch.&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;topics&quot;&gt;Topics&lt;&#x2F;h3&gt;
+&lt;p&gt;There are two topics that I find endlessly facinating, and that I feel I have &lt;strong&gt;practical&lt;&#x2F;strong&gt; understandings to share. These are software engineering and Buddhism. As far as the blog goes, I intend to only make posts about things in these categories which provide some immediate &lt;strong&gt;practical&lt;&#x2F;strong&gt; value[2].&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;the-spark&quot;&gt;The Spark&lt;&#x2F;h3&gt;
+&lt;p&gt;I have been thinking of starting a blog for years, but the spark to actually do it comes from a recent interaction I had with the &lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;helm&#x2F;helm&quot;&gt;Helm&lt;&#x2F;a&gt; community on slack. I needed to update the namespace that &lt;a href=&quot;https:&#x2F;&#x2F;helm.sh&#x2F;docs&#x2F;using_helm&#x2F;#installing-tiller&quot;&gt;tiller&lt;&#x2F;a&gt; thought a bunch of helm charts were deployed in[3]. After much googling without success, I asked on the &lt;a href=&quot;https:&#x2F;&#x2F;kubernetes.slack.com&#x2F;archives&#x2F;C0NH30761&#x2F;p1569422690003400&quot;&gt;helm slack&lt;&#x2F;a&gt; channel. It turns out there is not any tooling to do this, but with some guidance from some very helpful folks in that channel, I was able to figure it out.&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;next-few-posts&quot;&gt;Next Few Posts&lt;&#x2F;h3&gt;
+&lt;p&gt;The next few posts will be about the iterations of my solution to this problem. The first post will be about my first implementation simply written in Bash. However, there is much to learn even in this simple implementation about how tiller[4] maintains its state through configmaps with highly encoded data[5]. This Bash implementation worked, and I was able to use it against some dev clusters successfully. However, it felt very fragile and required cloning helm in order to run it[6].&lt;&#x2F;p&gt;
+&lt;p&gt;The next &lt;strong&gt;N&lt;&#x2F;strong&gt; posts will be about how we can improve on this working but imperfect solution[7]. This is a pattern I would like to try with future topics. My mantra is: &amp;quot;Can I do better?&amp;quot;. So, I will posit possible answers to that at the end of each post, and the following post will be about implementing those improvements.&lt;&#x2F;p&gt;
+&lt;p&gt;Beyond that, I am not sure exactly what I will write about. I have a few weeks to think about it ...&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;cadence&quot;&gt;Cadence&lt;&#x2F;h3&gt;
+&lt;p&gt;I am a big proponent of habits[8]. As such, I plan to make a post every week. This may also change[9], but that is the plan for now.&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;footnotes&quot;&gt;Footnotes&lt;&#x2F;h3&gt;
+&lt;p&gt;[1] Thanks Shadowman[1a]!&lt;&#x2F;p&gt;
+&lt;p&gt;[1a] Also, R.I.P. Shadowman.&lt;&#x2F;p&gt;
+&lt;p&gt;[2] For some definition of practical.&lt;&#x2F;p&gt;
+&lt;p&gt;[3] Not the actual k8s namespaces they were deployed in[3a]. Just the ones stored in tiller&#x27;s configmaps.&lt;&#x2F;p&gt;
+&lt;p&gt;[3a] That is not possible because k8s namespaces are immutable on a deployed resource.&lt;&#x2F;p&gt;
+&lt;p&gt;[4] The value of this knowledge is fading with Helm 3 around the corner[4a], but there will likely still be Helm 2 deployments around for quite some time.&lt;&#x2F;p&gt;
+&lt;p&gt;[4a] R.I.P. tiller&lt;&#x2F;p&gt;
+&lt;p&gt;[5] base64 and gzip and protobuf... Oh my!&lt;&#x2F;p&gt;
+&lt;p&gt;[6] for the .proto files&lt;&#x2F;p&gt;
+&lt;p&gt;[7] &lt;strong&gt;SPOILER ALERT&lt;&#x2F;strong&gt; it involves rust.&lt;&#x2F;p&gt;
+&lt;p&gt;[8] I meditate every day.&lt;&#x2F;p&gt;
+&lt;p&gt;[9] Impermanence&lt;&#x2F;p&gt;
+</description>
+            </item>
+        
+    </channel>
+</rss>

@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="chrome=1">
+        <meta name="HandheldFriendly" content="True">
+        <meta name="MobileOptimized" content="320">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="referrer" content="no-referrer">
+
+        <link rel="stylesheet" href="https:&#x2F;&#x2F;blog.impermanent.tech&#x2F;fonts.css">
+        <link rel="stylesheet" href="https:&#x2F;&#x2F;blog.impermanent.tech&#x2F;style.css">
+
+        <title>
+    How to Fix a Helm Namespace [PART 1]
+</title>
+
+        
+            <link rel="alternate" type="application/rss+xml" title="RSS" href="https:&#x2F;&#x2F;blog.impermanent.tech&#x2F;rss.xml">
+        
+    </head>
+    <body>
+        
+    <div class="wrap">
+        <div class="section" id="title">
+            
+    How to Fix a Helm Namespace [PART 1]
+
+        </div>
+        <div class="section" id="content">
+            
+    
+        
+            
+    
+    Mon Oct 14, 2019
+
+        
+        
+            
+                &#183; 613 words
+            
+        
+        
+            
+            
+                &#183; 4 min
+            
+        
+        
+            <div class="tag-container">
+                
+                    <span class="tag">
+                        <a href="https:&#x2F;&#x2F;blog.impermanent.tech&#x2F;tags&#x2F;encoding&#x2F;">
+                            encoding
+                        </a>
+                    </span>
+                
+                    <span class="tag">
+                        <a href="https:&#x2F;&#x2F;blog.impermanent.tech&#x2F;tags&#x2F;understandings&#x2F;">
+                            understandings
+                        </a>
+                    </span>
+                
+                    <span class="tag">
+                        <a href="https:&#x2F;&#x2F;blog.impermanent.tech&#x2F;tags&#x2F;kubernetes&#x2F;">
+                            kubernetes
+                        </a>
+                    </span>
+                
+                    <span class="tag">
+                        <a href="https:&#x2F;&#x2F;blog.impermanent.tech&#x2F;tags&#x2F;helm&#x2F;">
+                            helm
+                        </a>
+                    </span>
+                
+                    <span class="tag">
+                        <a href="https:&#x2F;&#x2F;blog.impermanent.tech&#x2F;tags&#x2F;protobuf&#x2F;">
+                            protobuf
+                        </a>
+                    </span>
+                
+                    <span class="tag">
+                        <a href="https:&#x2F;&#x2F;blog.impermanent.tech&#x2F;tags&#x2F;bash&#x2F;">
+                            bash
+                        </a>
+                    </span>
+                
+            </div>
+        
+        <hr/>
+    
+    <h2 id="problem-statement">Problem Statement</h2>
+<p>In <a href="https://github.com/helm/helm">Helm</a> it is possible to template the namespace of kubernetes resources from values instead of using the information in the .Release object.</p>
+<pre style="background-color:#2b303b;">
+<span style="color:#bf616a;">apiVersion</span><span style="color:#c0c5ce;">: </span><span style="color:#bf616a;">v1
+kind</span><span style="color:#c0c5ce;">: </span><span style="color:#bf616a;">ConfigMap
+metadata</span><span style="color:#c0c5ce;">:
+  </span><span style="color:#bf616a;">name</span><span style="color:#c0c5ce;">: &quot;</span><span style="color:#a3be8c;">namespace from .Values</span><span style="color:#c0c5ce;">&quot;
+  </span><span style="color:#bf616a;">namespace</span><span style="color:#c0c5ce;">: {{ </span><span style="color:#a3be8c;">.Values.namespace </span><span style="color:#c0c5ce;">}}
+</span></pre>
+<p>vs.</p>
+<pre style="background-color:#2b303b;">
+<span style="color:#bf616a;">apiVersion</span><span style="color:#c0c5ce;">: </span><span style="color:#bf616a;">v1
+kind</span><span style="color:#c0c5ce;">: </span><span style="color:#bf616a;">ConfigMap
+metadata</span><span style="color:#c0c5ce;">:
+  </span><span style="color:#bf616a;">name</span><span style="color:#c0c5ce;">: &quot;</span><span style="color:#a3be8c;">namespace from .Release</span><span style="color:#c0c5ce;">&quot;
+  </span><span style="color:#bf616a;">namespace</span><span style="color:#c0c5ce;">: {{ </span><span style="color:#a3be8c;">.Release.Namespace </span><span style="color:#c0c5ce;">}}
+</span></pre><h5 id="note-the-second-example-above-is-actually-default-and-the-same-as-not-specifying-namespace-at-all">NOTE: The second example above is actually default, and the same as not specifying namespace at all.</h5>
+<p>It turns out overridding the namespace like this is not a good idea. This results in <a href="https://helm.sh/docs/using_helm/#installing-tiller">tiller</a> storing a namespace in its view of the world that does not match reality. Further, there is not actually any way to later update tiller so that what is stored in its configmap matches reality.</p>
+<p>Well, not any easy way...</p>
+<h2 id="environment-setup">Environment Setup</h2>
+<h4 id="in-order-to-actually-try-any-of-this-code-the-following-is-assumed">In order to actually try any of this code the following is assumed:</h4>
+<ul>
+<li>access to an existing kubernetes cluster</li>
+<li>ability to use kubectl</li>
+<li>ability to use helm cli</li>
+</ul>
+<h4 id="further-in-order-to-decode-the-protobuf-in-the-tiller-configmaps">Further in order to decode the protobuf in the tiller configmaps:</h4>
+<ol>
+<li>Get the .proto definitions from helm</li>
+</ol>
+<ul>
+<li><code>go get k8s.io/helm</code></li>
+</ul>
+<ol start="2">
+<li>Install the protoc cli tool</li>
+</ol>
+<ul>
+<li><code>sudo dnf install protobuf-devel</code></li>
+</ul>
+<h2 id="find-the-tiller-configmap-for-the-chart">Find the Tiller ConfigMap for the Chart</h2>
+<p>The first thing we need to do is <strong>programmatically</strong> find the configmap for the chart deployment we are trying to fix.</p>
+<pre style="background-color:#2b303b;">
+<span style="color:#65737e;"># This is the directory with the helm .proto files
+</span><span style="color:#bf616a;">HELM_PROTO_DIR</span><span style="color:#c0c5ce;">=$</span><span style="color:#bf616a;">GOPATH</span><span style="color:#a3be8c;">/src/k8s.io/helm/_proto
+
+</span><span style="color:#65737e;"># We are not using any:
+# argument parsing
+# usage instructions
+# help text
+# IMHO, once you need those things,
+# you should probably no longer be using bash
+</span><span style="color:#bf616a;">chart_name</span><span style="color:#c0c5ce;">=$</span><span style="color:#bf616a;">1
+to_namespace</span><span style="color:#c0c5ce;">=$</span><span style="color:#bf616a;">2
+
+</span><span style="color:#65737e;"># Create some tempfiles to use for intermediary steps and debugging
+</span><span style="color:#bf616a;">decoded_cm</span><span style="color:#c0c5ce;">=$</span><span style="color:#a3be8c;">(</span><span style="color:#bf616a;">mktemp</span><span style="color:#a3be8c;">)
+</span><span style="color:#bf616a;">fixed_cm</span><span style="color:#c0c5ce;">=$</span><span style="color:#a3be8c;">(</span><span style="color:#bf616a;">mktemp</span><span style="color:#a3be8c;">)
+</span><span style="color:#bf616a;">fixed_base64</span><span style="color:#c0c5ce;">=$</span><span style="color:#a3be8c;">(</span><span style="color:#bf616a;">mktemp</span><span style="color:#a3be8c;">)
+
+</span><span style="color:#bf616a;">pushd </span><span style="color:#c0c5ce;">$</span><span style="color:#bf616a;">HELM_PROTO_DIR
+
+</span><span style="color:#65737e;"># Get all of the tiller configmaps that are actually deployed
+</span><span style="color:#c0c5ce;">jp=&#39;</span><span style="color:#a3be8c;">{.items[?(@.metadata.labels.STATUS==&quot;DEPLOYED&quot;)].metadata.name}</span><span style="color:#c0c5ce;">&#39;
+</span><span style="color:#bf616a;">tiller_cm_list</span><span style="color:#c0c5ce;">=$</span><span style="color:#a3be8c;">(</span><span style="color:#bf616a;">kubectl</span><span style="color:#a3be8c;"> get cm</span><span style="color:#bf616a;"> -n</span><span style="color:#a3be8c;"> kube-system</span><span style="color:#bf616a;"> -o</span><span style="color:#a3be8c;"> jsonpath=</span><span style="color:#c0c5ce;">$</span><span style="color:#bf616a;">jp</span><span style="color:#a3be8c;">)
+
+</span><span style="color:#65737e;"># Find the configmap for the particular chart we want to modify
+# There is likely a better way to do this
+</span><span style="color:#b48ead;">for</span><span style="color:#c0c5ce;"> cm </span><span style="color:#b48ead;">in </span><span style="color:#c0c5ce;">$</span><span style="color:#bf616a;">tiller_cm_list</span><span style="color:#c0c5ce;">; </span><span style="color:#b48ead;">do
+  if </span><span style="color:#c0c5ce;">(</span><span style="color:#96b5b4;">echo </span><span style="color:#c0c5ce;">$</span><span style="color:#bf616a;">cm </span><span style="color:#c0c5ce;">| </span><span style="color:#bf616a;">grep -E</span><span style="color:#c0c5ce;"> ^$</span><span style="color:#bf616a;">chart_name</span><span style="color:#c0c5ce;">); </span><span style="color:#b48ead;">then
+    </span><span style="color:#bf616a;">tiller_cm</span><span style="color:#c0c5ce;">=$</span><span style="color:#bf616a;">cm
+  </span><span style="color:#b48ead;">fi
+done
+</span></pre><h2 id="decode-the-tiller-configmap">Decode the Tiller ConfigMap</h2>
+<p>The tiller configmaps have a <code>.data.release</code> key which stores everything. This is protobuf encoded binary which is gzip'd and then base64 encoded.</p>
+<p>So we just need to decode it:</p>
+<pre style="background-color:#2b303b;">
+<span style="color:#65737e;"># Get .data.release field from Tiller CM and decode it
+</span><span style="color:#bf616a;">kubectl</span><span style="color:#c0c5ce;"> get cm \
+</span><span style="color:#bf616a;">  -n</span><span style="color:#c0c5ce;"> kube-system $</span><span style="color:#bf616a;">tiller_cm -o</span><span style="color:#c0c5ce;"> jsonpath=&#39;</span><span style="color:#a3be8c;">{.data.release}</span><span style="color:#c0c5ce;">&#39; |
+  </span><span style="color:#bf616a;">base64 -d </span><span style="color:#c0c5ce;">|
+  </span><span style="color:#bf616a;">gunzip </span><span style="color:#c0c5ce;">|
+  </span><span style="color:#bf616a;">protoc --decode  </span><span style="color:#c0c5ce;">\
+    hapi.release.Release \
+    hapi/release/release.proto &gt; $</span><span style="color:#bf616a;">decoded_cm
+</span></pre><h2 id="modify-the-release">Modify the release</h2>
+<p>With the configmap release field decoded, we can now modify the namespace with a simple <code>sed</code></p>
+<pre style="background-color:#2b303b;">
+<span style="color:#65737e;"># Change namespace in decoded Tiller CM
+# This is one of the more fragile parts of this method
+</span><span style="color:#bf616a;">sed </span><span style="color:#c0c5ce;">&#39;</span><span style="color:#a3be8c;">s/namespace: &quot;default&quot;/namespace: &quot;</span><span style="color:#c0c5ce;">&#39;$</span><span style="color:#bf616a;">to_namespace</span><span style="color:#c0c5ce;">&#39;</span><span style="color:#a3be8c;">&quot;/</span><span style="color:#c0c5ce;">&#39; \
+  &lt; $</span><span style="color:#bf616a;">decoded_cm </span><span style="color:#c0c5ce;">&gt; $</span><span style="color:#bf616a;">fixed_cm
+</span></pre><h2 id="re-encode-the-tiller-configmap">Re-encode the Tiller ConfigMap</h2>
+<p>Then we can re-encode it and patch it back to the configmap</p>
+<pre style="background-color:#2b303b;">
+<span style="color:#65737e;"># Re-encode release to put back in Tiller CM
+</span><span style="color:#bf616a;">protoc --encode </span><span style="color:#c0c5ce;">\
+  hapi.release.Release \
+  hapi/release/release.proto &lt; $</span><span style="color:#bf616a;">fixed_cm </span><span style="color:#c0c5ce;">|
+    </span><span style="color:#bf616a;">gzip -c </span><span style="color:#c0c5ce;">|
+    </span><span style="color:#bf616a;">base64 -w0 </span><span style="color:#c0c5ce;">&gt; $</span><span style="color:#bf616a;">fixed_base64
+
+</span><span style="color:#65737e;"># Patch .data.release field in Tiller CM with fixed namespace
+</span><span style="color:#c0c5ce;">kubectl patch cm</span><span style="color:#bf616a;"> -n</span><span style="color:#c0c5ce;"> kube-system $</span><span style="color:#bf616a;">tiller_cm </span><span style="color:#c0c5ce;">\
+</span><span style="color:#bf616a;">  -p </span><span style="color:#c0c5ce;">&#39;</span><span style="color:#a3be8c;">{&quot;data&quot;:{&quot;release&quot;:&quot;</span><span style="color:#c0c5ce;">&#39;$(</span><span style="color:#bf616a;">cat </span><span style="color:#c0c5ce;">$</span><span style="color:#bf616a;">fixed_base64</span><span style="color:#c0c5ce;">)&#39;</span><span style="color:#a3be8c;">&quot;}}</span><span style="color:#c0c5ce;">&#39;
+</span></pre><h2 id="problems-with-this-approach">Problems With This Approach</h2>
+<ol>
+<li>It is pretty dangerous to be manipulating the decoded protobuf with sed</li>
+<li>The user interface of the script is pretty terrible</li>
+<li>In order to just run the script it is required to have a checkout of the helm git repo</li>
+<li>Operating on one chart at a time is pretty tedious... especially if you need to update ~50 charts on ~10 clusters</li>
+</ol>
+<h2 id="how-can-we-do-better">How Can We Do Better</h2>
+<p>Next time we will look at how we can solve all of the above issues using Rust.</p>
+
+
+        </div>
+        
+    <div class="section bottom-menu">
+        <hr/>
+        <p>
+            
+                
+                    <a href="&#x2F;tags&#x2F;encoding">
+                        encoding
+                    </a>
+                    &#183;
+                
+                    <a href="&#x2F;tags&#x2F;understandings">
+                        understandings
+                    </a>
+                    &#183;
+                
+                    <a href="&#x2F;about">
+                        about
+                    </a>
+                    &#183;
+                
+                    <a href="&#x2F;tags&#x2F;impermanence">
+                        impermanence
+                    </a>
+                    &#183;
+                
+            
+            <a href="https:&#x2F;&#x2F;blog.impermanent.tech">
+                ...
+            </a>
+        </p>
+    </div>
+
+        
+    
+        <div class="section footer">
+            “Ardently do today what must be done. Who knows? Tomorrow, death comes.” <br>- Siddhattha Gotama
+        </div>
+    
+
+    </div>
+
+    </body>
+</html>

@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>Impermanent Tech</title>
+        <link>https://blog.impermanent.tech</link>
+        <description></description>
+        <generator>Zola</generator>
+        <language>en</language>
+        <atom:link href="https://blog.impermanent.tech/tags/understandings/rss.xml" rel="self" type="application/rss+xml"/>
+        <lastBuildDate>Mon, 14 Oct 2019 00:00:00 +0000</lastBuildDate>
+        
+            <item>
+                <title>How to Fix a Helm Namespace [PART 1]</title>
+                <pubDate>Mon, 14 Oct 2019 00:00:00 +0000</pubDate>
+                <link>https://blog.impermanent.tech/posts/fix-helm-ns-bash/</link>
+                <guid>https://blog.impermanent.tech/posts/fix-helm-ns-bash/</guid>
+                <description>&lt;h2 id=&quot;problem-statement&quot;&gt;Problem Statement&lt;&#x2F;h2&gt;
+&lt;p&gt;In &lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;helm&#x2F;helm&quot;&gt;Helm&lt;&#x2F;a&gt; it is possible to template the namespace of kubernetes resources from values instead of using the information in the .Release object.&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;span style=&quot;color:#bf616a;&quot;&gt;apiVersion&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;: &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;v1
+kind&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;: &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;ConfigMap
+metadata&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;:
+  &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;name&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;: &amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;namespace from .Values&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;&amp;quot;
+  &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;namespace&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;: {{ &lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;.Values.namespace &lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;}}
+&lt;&#x2F;span&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;vs.&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;span style=&quot;color:#bf616a;&quot;&gt;apiVersion&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;: &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;v1
+kind&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;: &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;ConfigMap
+metadata&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;:
+  &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;name&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;: &amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;namespace from .Release&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;&amp;quot;
+  &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;namespace&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;: {{ &lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;.Release.Namespace &lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;}}
+&lt;&#x2F;span&gt;&lt;&#x2F;pre&gt;&lt;h5 id=&quot;note-the-second-example-above-is-actually-default-and-the-same-as-not-specifying-namespace-at-all&quot;&gt;NOTE: The second example above is actually default, and the same as not specifying namespace at all.&lt;&#x2F;h5&gt;
+&lt;p&gt;It turns out overridding the namespace like this is not a good idea. This results in &lt;a href=&quot;https:&#x2F;&#x2F;helm.sh&#x2F;docs&#x2F;using_helm&#x2F;#installing-tiller&quot;&gt;tiller&lt;&#x2F;a&gt; storing a namespace in its view of the world that does not match reality. Further, there is not actually any way to later update tiller so that what is stored in its configmap matches reality.&lt;&#x2F;p&gt;
+&lt;p&gt;Well, not any easy way...&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;environment-setup&quot;&gt;Environment Setup&lt;&#x2F;h2&gt;
+&lt;h4 id=&quot;in-order-to-actually-try-any-of-this-code-the-following-is-assumed&quot;&gt;In order to actually try any of this code the following is assumed:&lt;&#x2F;h4&gt;
+&lt;ul&gt;
+&lt;li&gt;access to an existing kubernetes cluster&lt;&#x2F;li&gt;
+&lt;li&gt;ability to use kubectl&lt;&#x2F;li&gt;
+&lt;li&gt;ability to use helm cli&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;h4 id=&quot;further-in-order-to-decode-the-protobuf-in-the-tiller-configmaps&quot;&gt;Further in order to decode the protobuf in the tiller configmaps:&lt;&#x2F;h4&gt;
+&lt;ol&gt;
+&lt;li&gt;Get the .proto definitions from helm&lt;&#x2F;li&gt;
+&lt;&#x2F;ol&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;go get k8s.io&#x2F;helm&lt;&#x2F;code&gt;&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;ol start=&quot;2&quot;&gt;
+&lt;li&gt;Install the protoc cli tool&lt;&#x2F;li&gt;
+&lt;&#x2F;ol&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;sudo dnf install protobuf-devel&lt;&#x2F;code&gt;&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;h2 id=&quot;find-the-tiller-configmap-for-the-chart&quot;&gt;Find the Tiller ConfigMap for the Chart&lt;&#x2F;h2&gt;
+&lt;p&gt;The first thing we need to do is &lt;strong&gt;programmatically&lt;&#x2F;strong&gt; find the configmap for the chart deployment we are trying to fix.&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;span style=&quot;color:#65737e;&quot;&gt;# This is the directory with the helm .proto files
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;HELM_PROTO_DIR&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;=$&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;GOPATH&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;&#x2F;src&#x2F;k8s.io&#x2F;helm&#x2F;_proto
+
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;# We are not using any:
+# argument parsing
+# usage instructions
+# help text
+# IMHO, once you need those things,
+# you should probably no longer be using bash
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;chart_name&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;=$&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;1
+to_namespace&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;=$&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;2
+
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;# Create some tempfiles to use for intermediary steps and debugging
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;decoded_cm&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;=$&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;mktemp&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;)
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;fixed_cm&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;=$&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;mktemp&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;)
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;fixed_base64&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;=$&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;mktemp&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;)
+
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;pushd &lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;$&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;HELM_PROTO_DIR
+
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;# Get all of the tiller configmaps that are actually deployed
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;jp=&amp;#39;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;{.items[?(@.metadata.labels.STATUS==&amp;quot;DEPLOYED&amp;quot;)].metadata.name}&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;&amp;#39;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;tiller_cm_list&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;=$&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;kubectl&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt; get cm&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt; -n&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt; kube-system&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt; -o&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt; jsonpath=&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;$&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;jp&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;)
+
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;# Find the configmap for the particular chart we want to modify
+# There is likely a better way to do this
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;for&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt; cm &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;in &lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;$&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;tiller_cm_list&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;do
+  if &lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#96b5b4;&quot;&gt;echo &lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;$&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;cm &lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;| &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;grep -E&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt; ^$&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;chart_name&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;); &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;then
+    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;tiller_cm&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;=$&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;cm
+  &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;fi
+done
+&lt;&#x2F;span&gt;&lt;&#x2F;pre&gt;&lt;h2 id=&quot;decode-the-tiller-configmap&quot;&gt;Decode the Tiller ConfigMap&lt;&#x2F;h2&gt;
+&lt;p&gt;The tiller configmaps have a &lt;code&gt;.data.release&lt;&#x2F;code&gt; key which stores everything. This is protobuf encoded binary which is gzip&#x27;d and then base64 encoded.&lt;&#x2F;p&gt;
+&lt;p&gt;So we just need to decode it:&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;span style=&quot;color:#65737e;&quot;&gt;# Get .data.release field from Tiller CM and decode it
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;kubectl&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt; get cm \
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;  -n&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt; kube-system $&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;tiller_cm -o&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt; jsonpath=&amp;#39;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;{.data.release}&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;&amp;#39; |
+  &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;base64 -d &lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;|
+  &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;gunzip &lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;|
+  &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;protoc --decode  &lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;\
+    hapi.release.Release \
+    hapi&#x2F;release&#x2F;release.proto &amp;gt; $&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;decoded_cm
+&lt;&#x2F;span&gt;&lt;&#x2F;pre&gt;&lt;h2 id=&quot;modify-the-release&quot;&gt;Modify the release&lt;&#x2F;h2&gt;
+&lt;p&gt;With the configmap release field decoded, we can now modify the namespace with a simple &lt;code&gt;sed&lt;&#x2F;code&gt;&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;span style=&quot;color:#65737e;&quot;&gt;# Change namespace in decoded Tiller CM
+# This is one of the more fragile parts of this method
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;sed &lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;s&#x2F;namespace: &amp;quot;default&amp;quot;&#x2F;namespace: &amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;&amp;#39;$&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;to_namespace&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;&amp;quot;&#x2F;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;&amp;#39; \
+  &amp;lt; $&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;decoded_cm &lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;&amp;gt; $&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;fixed_cm
+&lt;&#x2F;span&gt;&lt;&#x2F;pre&gt;&lt;h2 id=&quot;re-encode-the-tiller-configmap&quot;&gt;Re-encode the Tiller ConfigMap&lt;&#x2F;h2&gt;
+&lt;p&gt;Then we can re-encode it and patch it back to the configmap&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;&quot;&gt;
+&lt;span style=&quot;color:#65737e;&quot;&gt;# Re-encode release to put back in Tiller CM
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;protoc --encode &lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;\
+  hapi.release.Release \
+  hapi&#x2F;release&#x2F;release.proto &amp;lt; $&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;fixed_cm &lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;|
+    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;gzip -c &lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;|
+    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;base64 -w0 &lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;&amp;gt; $&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;fixed_base64
+
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;# Patch .data.release field in Tiller CM with fixed namespace
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;kubectl patch cm&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt; -n&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt; kube-system $&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;tiller_cm &lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;\
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;  -p &lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;{&amp;quot;data&amp;quot;:{&amp;quot;release&amp;quot;:&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;&amp;#39;$(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;cat &lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;$&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;fixed_base64&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;)&amp;#39;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;&amp;quot;}}&lt;&#x2F;span&gt;&lt;span style=&quot;color:#c0c5ce;&quot;&gt;&amp;#39;
+&lt;&#x2F;span&gt;&lt;&#x2F;pre&gt;&lt;h2 id=&quot;problems-with-this-approach&quot;&gt;Problems With This Approach&lt;&#x2F;h2&gt;
+&lt;ol&gt;
+&lt;li&gt;It is pretty dangerous to be manipulating the decoded protobuf with sed&lt;&#x2F;li&gt;
+&lt;li&gt;The user interface of the script is pretty terrible&lt;&#x2F;li&gt;
+&lt;li&gt;In order to just run the script it is required to have a checkout of the helm git repo&lt;&#x2F;li&gt;
+&lt;li&gt;Operating on one chart at a time is pretty tedious... especially if you need to update ~50 charts on ~10 clusters&lt;&#x2F;li&gt;
+&lt;&#x2F;ol&gt;
+&lt;h2 id=&quot;how-can-we-do-better&quot;&gt;How Can We Do Better&lt;&#x2F;h2&gt;
+&lt;p&gt;Next time we will look at how we can solve all of the above issues using Rust.&lt;&#x2F;p&gt;
+</description>
+            </item>
+        
+            <item>
+                <title>Hello World!</title>
+                <pubDate>Sun, 06 Oct 2019 00:00:00 +0000</pubDate>
+                <link>https://blog.impermanent.tech/posts/hello-world/</link>
+                <guid>https://blog.impermanent.tech/posts/hello-world/</guid>
+                <description>&lt;p&gt;Unlike future posts, this post will not have much in the way of practical content. Instead, I will layout my intentions for this blog in general, as well as what my plans are for the first few posts. If those posts are already written by the time you see this, it is probably a better use of your time to skip this one. At some point, I will likely just fold information contained here into the about page and delete this post.&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;purpose&quot;&gt;Purpose&lt;&#x2F;h3&gt;
+&lt;p&gt;I have spent most of my professional career being paid to work solely and directly on open source software[1]. However, recently I have changed jobs. While I really enjoy the technical challenges I am working on, I miss the feeling of giving back to the worldwide community of software developers. This blog is my method to scratch that particular itch.&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;topics&quot;&gt;Topics&lt;&#x2F;h3&gt;
+&lt;p&gt;There are two topics that I find endlessly facinating, and that I feel I have &lt;strong&gt;practical&lt;&#x2F;strong&gt; understandings to share. These are software engineering and Buddhism. As far as the blog goes, I intend to only make posts about things in these categories which provide some immediate &lt;strong&gt;practical&lt;&#x2F;strong&gt; value[2].&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;the-spark&quot;&gt;The Spark&lt;&#x2F;h3&gt;
+&lt;p&gt;I have been thinking of starting a blog for years, but the spark to actually do it comes from a recent interaction I had with the &lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;helm&#x2F;helm&quot;&gt;Helm&lt;&#x2F;a&gt; community on slack. I needed to update the namespace that &lt;a href=&quot;https:&#x2F;&#x2F;helm.sh&#x2F;docs&#x2F;using_helm&#x2F;#installing-tiller&quot;&gt;tiller&lt;&#x2F;a&gt; thought a bunch of helm charts were deployed in[3]. After much googling without success, I asked on the &lt;a href=&quot;https:&#x2F;&#x2F;kubernetes.slack.com&#x2F;archives&#x2F;C0NH30761&#x2F;p1569422690003400&quot;&gt;helm slack&lt;&#x2F;a&gt; channel. It turns out there is not any tooling to do this, but with some guidance from some very helpful folks in that channel, I was able to figure it out.&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;next-few-posts&quot;&gt;Next Few Posts&lt;&#x2F;h3&gt;
+&lt;p&gt;The next few posts will be about the iterations of my solution to this problem. The first post will be about my first implementation simply written in Bash. However, there is much to learn even in this simple implementation about how tiller[4] maintains its state through configmaps with highly encoded data[5]. This Bash implementation worked, and I was able to use it against some dev clusters successfully. However, it felt very fragile and required cloning helm in order to run it[6].&lt;&#x2F;p&gt;
+&lt;p&gt;The next &lt;strong&gt;N&lt;&#x2F;strong&gt; posts will be about how we can improve on this working but imperfect solution[7]. This is a pattern I would like to try with future topics. My mantra is: &amp;quot;Can I do better?&amp;quot;. So, I will posit possible answers to that at the end of each post, and the following post will be about implementing those improvements.&lt;&#x2F;p&gt;
+&lt;p&gt;Beyond that, I am not sure exactly what I will write about. I have a few weeks to think about it ...&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;cadence&quot;&gt;Cadence&lt;&#x2F;h3&gt;
+&lt;p&gt;I am a big proponent of habits[8]. As such, I plan to make a post every week. This may also change[9], but that is the plan for now.&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;footnotes&quot;&gt;Footnotes&lt;&#x2F;h3&gt;
+&lt;p&gt;[1] Thanks Shadowman[1a]!&lt;&#x2F;p&gt;
+&lt;p&gt;[1a] Also, R.I.P. Shadowman.&lt;&#x2F;p&gt;
+&lt;p&gt;[2] For some definition of practical.&lt;&#x2F;p&gt;
+&lt;p&gt;[3] Not the actual k8s namespaces they were deployed in[3a]. Just the ones stored in tiller&#x27;s configmaps.&lt;&#x2F;p&gt;
+&lt;p&gt;[3a] That is not possible because k8s namespaces are immutable on a deployed resource.&lt;&#x2F;p&gt;
+&lt;p&gt;[4] The value of this knowledge is fading with Helm 3 around the corner[4a], but there will likely still be Helm 2 deployments around for quite some time.&lt;&#x2F;p&gt;
+&lt;p&gt;[4a] R.I.P. tiller&lt;&#x2F;p&gt;
+&lt;p&gt;[5] base64 and gzip and protobuf... Oh my!&lt;&#x2F;p&gt;
+&lt;p&gt;[6] for the .proto files&lt;&#x2F;p&gt;
+&lt;p&gt;[7] &lt;strong&gt;SPOILER ALERT&lt;&#x2F;strong&gt; it involves rust.&lt;&#x2F;p&gt;
+&lt;p&gt;[8] I meditate every day.&lt;&#x2F;p&gt;
+&lt;p&gt;[9] Impermanence&lt;&#x2F;p&gt;
+</description>
+            </item>
+        
+    </channel>
+</rss>

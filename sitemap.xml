@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    
+        <url>
+            <loc>https://blog.impermanent.tech/</loc>
+            
+        </url>
+    
+        <url>
+            <loc>https://blog.impermanent.tech/about/</loc>
+            
+        </url>
+    
+        <url>
+            <loc>https://blog.impermanent.tech/posts/</loc>
+            
+        </url>
+    
+        <url>
+            <loc>https://blog.impermanent.tech/posts/fix-helm-ns-bash/</loc>
+            
+                <lastmod>2019-10-14</lastmod>
+            
+        </url>
+    
+        <url>
+            <loc>https://blog.impermanent.tech/posts/hello-world/</loc>
+            
+                <lastmod>2019-10-06</lastmod>
+            
+        </url>
+    
+        <url>
+            <loc>https://blog.impermanent.tech/tags/</loc>
+            
+        </url>
+    
+        <url>
+            <loc>https://blog.impermanent.tech/tags/bash/</loc>
+            
+        </url>
+    
+        <url>
+            <loc>https://blog.impermanent.tech/tags/encoding/</loc>
+            
+        </url>
+    
+        <url>
+            <loc>https://blog.impermanent.tech/tags/helm/</loc>
+            
+        </url>
+    
+        <url>
+            <loc>https://blog.impermanent.tech/tags/impermanence/</loc>
+            
+        </url>
+    
+        <url>
+            <loc>https://blog.impermanent.tech/tags/kubernetes/</loc>
+            
+        </url>
+    
+        <url>
+            <loc>https://blog.impermanent.tech/tags/protobuf/</loc>
+            
+        </url>
+    
+        <url>
+            <loc>https://blog.impermanent.tech/tags/understandings/</loc>
+            
+        </url>
+    
+</urlset>
